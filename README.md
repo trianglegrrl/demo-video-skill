@@ -1,0 +1,65 @@
+# demo-video
+
+A Claude Code skill for making narrated product demo videos **without screen capture**.
+
+Playwright records each window (a terminal, a web app, a chat app) headless, as its own
+stream on one clock. Only the stretches you mark are kept, so a 10-minute wait becomes a
+"+10 min" cut. The windows are laid out on one desktop, a placeholder narration is voiced
+with macOS `say`, and you get a time-stamped script. A person then reads that script as the
+real voice-over and finishes the edit in iMovie.
+
+It works with the Mac's screen locked, and re-recording one scene doesn't touch the others.
+
+## Install
+
+```bash
+git clone <this repo's URL> ~/.claude/skills/demo-video
+```
+
+Then ask Claude Code for a demo video; the skill loads itself. `SKILL.md` is what Claude
+reads; this README is for people.
+
+## Requirements
+
+macOS (for `say` and iMovie), [uv](https://docs.astral.sh/uv/), ffmpeg with `drawtext`
+(`brew install ffmpeg`), and tmux. Check them:
+
+```bash
+bash ~/.claude/skills/demo-video/scripts/doctor.sh
+```
+
+## Smoke test
+
+```bash
+bash ~/.claude/skills/demo-video/examples/hello/run.sh
+```
+
+About three minutes. It records a terminal and a tiny web app, then writes
+`~/Movies/demo-video/hello/final/hello.mp4` (about 21 s), plus `-script.md`,
+`-picture.mp4` and `-preview.mp4`.
+
+## What you get
+
+| File | Use |
+|---|---|
+| `<out>.mp4` | The video with the `say` narration, to hear the pacing |
+| `<out>-picture.mp4` | The video without audio: record your voice-over over it |
+| `<out>-script.md` | Each line with its start time and how many seconds it has |
+| `<out>-preview.mp4` | A smaller copy for chat uploads |
+
+The voice-over and iMovie finish are manual: see
+[voiceover-and-imovie.md](voiceover-and-imovie.md).
+
+## Layout
+
+| Path | What |
+|---|---|
+| `SKILL.md` | The steps Claude follows |
+| `scripts/` | `recorder.py` (record takes), `cut.py` (lay out shots), `assemble.py` (narrate and join), `stage.sh` + `term_mirror.py` (a clean terminal to record), `human.py` (a drawn cursor), `doctor.sh` |
+| `examples/hello/` | The smoke test and the template to copy for your own demo |
+| `troubleshooting.md` | Symptoms, causes and fixes |
+| `tests/` | `uv run -q --no-project --with playwright --with pytest pytest tests` |
+
+## License
+
+MIT
