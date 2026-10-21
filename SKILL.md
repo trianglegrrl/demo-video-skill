@@ -7,7 +7,7 @@ description: Use when making a narrated product demo or screencast video of a pr
 
 A **headless recorder**: Playwright records every window (web app, terminal, chat) as its own
 stream on one take clock; only the `clip` stretches are kept, laid out as windows on one
-desktop; macOS `say` voices a placeholder narration; a person then reads the time-stamped
+desktop; Kokoro-82M (a local, open-weight voice) reads a placeholder narration; a person then reads the time-stamped
 script as the real voice-over and finishes in iMovie. No screen capture: the Mac may be locked.
 
 `SKILL` below means this skill's folder. Tools are in `SKILL/scripts/`.
@@ -32,7 +32,10 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
    smoke test's runner) into a folder of your own. In `demo.py` set `TITLE`, `OUT`,
    `PROFILES` (a folder of its own: two demos sharing one collide), `TMUX`, `STREAMS`
    (at most 4) and `SCENES`: one take per scene, **one line per clip** (`None` = silent).
-   Budget ~2.9 words a second (`say` at 175 wpm) against the length asked for.
+   Budget ~2.7 words a second (Kokoro's pace) against the length asked for. Write the lines
+   in the voice of the person who will read them (their voice skill, if they have one): full
+   spoken sentences, plain words, not captions. A word Kokoro gets wrong takes its
+   pronunciation inline, `[frontmatter](/fɹˈʌntmætəɹ/)`; the script shows just the word.
    Public-facing: no customer or prospect names. Review the lines as an expert in the
    audience's job would ("Act as a <their role> with fifteen years in the job…"):
    wrong numbers, vague timings ("a few minutes"), claims a practitioner would doubt.
@@ -56,7 +59,9 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
    **Look at them.** Done when every shot shows what its line says: no blank terminal, no
    login page, no splash screen, text readable.
 5. **Assemble.** `python SKILL/scripts/assemble.py <demo-folder> <out.mp4> [voice]`
-   (voice: any `say -v '?'` name, default Samantha). Writes `<out>.mp4` (with `say`),
+   (voice: a Kokoro voice, default `af_heart`; `bf_emma` is British; any other name is a
+   `say -v '?'` voice). The first Kokoro run downloads the model (~330 MB) and takes a
+   minute; after that it voices faster than real time. Writes `<out>.mp4` (narrated),
    `-script.md` (each line's start and its seconds), `-picture.mp4` (no audio) and
    `-preview.mp4`. Too long: shorten **lines**, since a long line holds the shot's last
    frame. Too short: lengthen the holds inside clips and re-record those takes. Each shot runs for
@@ -65,7 +70,7 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
 6. **Hand off.** To the person: `-picture.mp4` (record over it), `-script.md`, the
    narrated `.mp4` (to hear the pacing once) and
    [voiceover-and-imovie.md](voiceover-and-imovie.md). In chat, send `-preview.mp4`
-   (uploads cap at 30 MB). The script's times hold for `say`; a human reads slower, and
+   (uploads cap at 30 MB). The script's times hold for Kokoro; a human reads slower, and
    iMovie absorbs that.
 
 ## Changing a shot later

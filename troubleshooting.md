@@ -37,7 +37,8 @@ Each row was hit for real while making a 5-minute product demo with this pipelin
 | ffmpeg: "Input area … not within the padded area" | odd frame heights with yuv420p | heights computed even (`width * 9 // 32 * 2`); keep window widths from `SLOTS`/`FRONT` |
 | `assemble.py`: "N shots but M lines" | a scene's clips and its lines drifted | one line per clip, `None` for a silent clip |
 | The video runs over the target length | lines longer than their shots hold the last frame | shorten lines; `speeds` in a scene plays a long reading or typing shot faster (1.2–1.7) |
-| A line sounds rushed | it needs well over 175 wpm for its shot | rewrite it shorter; don't speed the voice |
+| A line sounds rushed | it needs well over ~2.7 words a second for its shot | rewrite it shorter; don't speed the voice |
 | `SyntaxError` in demo.py after an edit | an apostrophe inside a single-quoted string | write lines in double quotes |
-| `say` mispronounces a word ("sweep" as "suite") | the TTS voice | leave it: the human voice-over replaces it |
+| Kokoro mispronounces a word (a term of art, a product name) | it isn't in Kokoro's dictionary | give it a pronunciation inline: `[frontmatter](/fɹˈʌntmætəɹ/)` (IPA, as in the Kokoro README); re-assemble |
+| Assemble fails in `uv run … kokoro` | no network on the first run: the model downloads from Hugging Face, and misaki installs spaCy's `en_core_web_sm` (again whenever uv rebuilds Kokoro's environment); or no Python 3.12 for uv | run once online; `uv python install 3.12` |
 | The full video is too big to send in chat (30 MB cap) | 1080p crf 18 | send `-preview.mp4` (crf 26, ~18 MB for 5 min) |

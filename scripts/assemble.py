@@ -3,11 +3,12 @@
     python assemble.py <demo-folder> <out.mp4> [voice]
 
 For each scene in demo.SCENES (in order) and each shot in its take: render the shot
-(cut.render), voice its line with macOS `say`, and when the line needs longer than the
-footage, hold the shot's last frame until the line is done. A title card opens the video.
+(cut.render), voice its line (tts: Kokoro-82M by default, or a macOS `say` voice), and when
+the line needs longer than the footage, hold the shot's last frame until the line is done. A
+title card opens the video.
 
 Writes four files:
-  <out>.mp4            the video with the placeholder `say` narration
+  <out>.mp4            the video with the placeholder narration
   <out>-script.md      the read-along script: each line's start time and its seconds
   <out>-picture.mp4    the same video with no audio, the master for the human voice-over
   <out>-preview.mp4    a small copy for sharing in chat (well under 30 MB for ~5 min)
@@ -22,15 +23,10 @@ from types import ModuleType
 
 from cut import FONT_B, FPS, _text, duration, events_of, render, shots, wallpaper
 from recorder import load_demo
+from tts import DEFAULT_VOICE, spoken, voice_lines
 
-WPM = 175
 LEAD, TAIL = 0.25, 0.45  # air before a line starts, and after it ends, inside its shot
 TITLE_SECONDS = 3.0
-
-
-def voice(text: str, voice_name: str, dst: Path) -> float:
-    subprocess.run(["say", "-v", voice_name, "-r", str(WPM), "-o", str(dst), text], check=True)
-    return duration(dst)
 
 
 def finish_shot(video: Path, line: Path | None, line_len: float, dst: Path) -> float:
@@ -67,6 +63,15 @@ def title_card(demo: ModuleType, bg: Path, dst: Path) -> None:
                     "-ar", "48000", "-ac", "1", "-shortest", str(dst)], check=True)
 
 
+def voice_scenes(scenes: list[dict], voice_name: str,
+                 tmp: Path) -> dict[tuple[int, int], tuple[Path, float]]:
+    """Every scene's spoken lines in one batch (Kokoro loads its model once), keyed by
+    (scene, line) so a silent line never shifts another line's audio onto the wrong shot."""
+    keys = [(s, i) for s, scene in enumerate(scenes) for i, t in enumerate(scene["lines"]) if t]
+    voiced = voice_lines([scenes[s]["lines"][i] for s, i in keys], voice_name, tmp)
+    return dict(zip(keys, voiced, strict=True))
+
+
 def stamp(seconds: float) -> str:
     return f"{int(seconds // 60)}:{seconds % 60:04.1f}"
 
@@ -94,7 +99,8 @@ def main(demo: ModuleType, out: Path, voice_name: str) -> None:
         wallpaper(demo, bg)
         parts, at = [tmp / "title.mp4"], TITLE_SECONDS
         title_card(demo, bg, parts[0])
-        for scene in demo.SCENES:
+        voiced = voice_scenes(demo.SCENES, voice_name, tmp)
+        for s, scene in enumerate(demo.SCENES):
             take = demo.OUT / scene["take"]
             events = events_of(take)
             starts = {e["stream"]: e["t"] for e in events if e["kind"] == "start"}
@@ -104,13 +110,12 @@ def main(demo: ModuleType, out: Path, voice_name: str) -> None:
                 raw, clip, line_len = tmp / f"{take.name}-{i}.mp4", None, 0.0
                 render(demo, take, shot, starts, bg, raw)
                 if text:
-                    clip = tmp / f"{take.name}-{i}.aiff"
-                    line_len = voice(text, voice_name, clip)
+                    clip, line_len = voiced[(s, i)]
                 part = tmp / f"{take.name}-{i}-final.mp4"
                 length = finish_shot(raw, clip, line_len, part)
                 if text:  # the reader's budget: from this line's start to the next shot
                     script.append(f"- **{stamp(at + LEAD)}** ({shot.focus}, "
-                                  f"{length - LEAD:.1f} s) {text}")
+                                  f"{length - LEAD:.1f} s) {spoken(text)}")
                 at += length
                 parts.append(part)
             script.append("")
@@ -134,4 +139,4 @@ if __name__ == "__main__":
     if len(sys.argv) not in (3, 4):
         raise SystemExit("usage: assemble.py <demo-folder> <out.mp4> [voice]")
     main(load_demo(sys.argv[1]), Path(sys.argv[2]).expanduser(),
-         sys.argv[3] if len(sys.argv) == 4 else "Samantha")
+         sys.argv[3] if len(sys.argv) == 4 else DEFAULT_VOICE)

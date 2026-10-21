@@ -6,7 +6,6 @@ need() { if ! command -v "$1" >/dev/null 2>&1; then echo "MISSING $1 -> $2"; fai
 need ffmpeg  "brew install ffmpeg"
 need ffprobe "brew install ffmpeg"
 need tmux    "brew install tmux"
-need say     "macOS only: the placeholder narration uses say"
 need uv      "curl -LsSf https://astral.sh/uv/install.sh | sh"
 for f in "/System/Library/Fonts/Supplemental/Arial.ttf" "/System/Library/Fonts/Supplemental/Arial Bold.ttf"; do
   [ -f "$f" ] || { echo "MISSING font $f"; fail=1; }
