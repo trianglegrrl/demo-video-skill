@@ -6,7 +6,6 @@ text, the pre-render check, and one real render against ffmpeg.
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -108,8 +107,7 @@ def test_the_stamp_reads_minutes_and_tenths():
     assert assemble.stamp(3.25) == "0:03.2" and assemble.stamp(122.5) == "2:02.5"
 
 
-@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
-def test_render_caps_a_shot_at_its_clip_length_even_when_a_stream_runs_long(tmp_path):
+def test_render_caps_a_shot_at_its_clip_length_even_when_a_stream_runs_long(tmp_path, ffmpeg):
     """A 30 s stream behind a 2 s clip must render 2 s, not run on (overlay's shortest=1 alone
     once let a 10 s shot render 348 s)."""
     for name, seconds in (("term", 30), ("app", 30)):
@@ -130,7 +128,7 @@ def _blank_demo(tmp_path: Path) -> SimpleNamespace:
                            STREAMS={"app": {"title": "App"}})
 
 
-def test_a_take_that_fails_keeps_the_last_good_take(tmp_path):
+def test_a_take_that_fails_keeps_the_last_good_take(tmp_path, chromium_launches):
     """Re-recording one take must not cost the good one when the new attempt dies."""
     from recorder import Take
     demo = _blank_demo(tmp_path)
@@ -145,7 +143,7 @@ def test_a_take_that_fails_keeps_the_last_good_take(tmp_path):
     assert (demo.OUT / "s1.partial" / "events.jsonl").exists()
 
 
-def test_a_take_that_ends_cleanly_replaces_the_old_one(tmp_path):
+def test_a_take_that_ends_cleanly_replaces_the_old_one(tmp_path, chromium_launches):
     from recorder import Take
     demo = _blank_demo(tmp_path)
     for label in ("first", "second"):

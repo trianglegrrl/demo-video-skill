@@ -34,13 +34,13 @@ def s2() -> None:
         app = t.pages["app"]
         human.cursor(app)  # headless Chromium draws no pointer
         with t.clip("one click runs it", "app"):
-            time.sleep(0.8)
+            human.idle(app, 0.8)
             human.click(app, app.get_by_role("button", name="Run report"))
-            time.sleep(1.0)
+            human.idle(app, 1.0)
         app.get_by_text("3 builds failed").wait_for(timeout=30000)  # off camera
         with t.clip("the report in the app", "app"):
-            human.move(app, 640, 400)
-            time.sleep(3.0)
+            human.move(app, 900, 520)  # a long move: curve, overshoot, correction
+            human.idle(app, 3.0)  # a reading hold: the cursor drifts, so the recording keeps going
 
 
 SCENES = {"s1": s1, "s2": s2}
