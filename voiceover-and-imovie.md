@@ -7,7 +7,7 @@ pipeline hands over three files:
 |---|---|
 | `<out>-picture.mp4` | The video, no audio. The master you record over. |
 | `<out>-script.md` | What to say. `**1:42.5** (app, 6.1 s) Some jobs shouldn't…`: start at 1:42.5, about 6 s to say it. |
-| `<out>.mp4` | The same video with the robot voice: play it once to hear the pacing. |
+| `<out>.mp4` | The same video with the placeholder Kokoro voice: play it once to hear the pacing. |
 
 ## Record
 
@@ -33,7 +33,7 @@ A 5-minute video took one 5-minute recording.
 - **A line longer than its shot**: split the video at the shot's last frame and drag the
   clip end longer (or Modify → Add Freeze Frame), so the picture waits for the voice.
 - If you imported the narrated `<out>.mp4` instead of `-picture`, set its clip volume to 0
-  (or Modify → Detach Audio and delete the robot track) so the voices do not overlap.
+  (or Modify → Detach Audio and delete the placeholder track) so the voices do not overlap.
 
 ## Export
 

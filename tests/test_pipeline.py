@@ -87,6 +87,23 @@ def test_load_demo_finds_demo_py_from_a_scene_file_and_its_helpers(tmp_path):
     assert demo.N == 7 and demo.OUT == Path.home() / "x"
 
 
+def test_each_line_gets_its_own_audio_with_silent_lines_between(tmp_path, monkeypatch):
+    batches: list = []
+
+    def fake_voice_lines(lines, voice, tmp):
+        batches.append(lines)
+        return [(Path(f"{t}.wav"), float(len(t))) for t in lines]
+
+    monkeypatch.setattr(assemble, "voice_lines", fake_voice_lines)
+    scenes = [{"lines": ["one", None, "three"]}, {"lines": ["", "five"]}]
+
+    voiced = assemble.voice_scenes(scenes, "af_heart", tmp_path)
+
+    assert batches == [["one", "three", "five"]], f"one batch, silent lines left out: {batches}"
+    assert voiced == {(0, 0): (Path("one.wav"), 3.0), (0, 2): (Path("three.wav"), 5.0),
+                      (1, 1): (Path("five.wav"), 4.0)}, f"audio landed on the wrong line: {voiced}"
+
+
 def test_the_stamp_reads_minutes_and_tenths():
     assert assemble.stamp(3.25) == "0:03.2" and assemble.stamp(122.5) == "2:02.5"
 
