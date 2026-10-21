@@ -45,7 +45,12 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
    spinner, "checking…") can stay on camera; cut it otherwise, and let the line say so
    ("six seconds later…"): only cuts of 20 s or more get an on-screen "+N s" tag. Before the first clip, off camera: reset what the
    last take left (stop jobs, mark notifications read; `Take` clears the tmux scrollback)
-   and load slow apps. Click with `human.click` (headless draws no pointer). A stream behind a
+   and load slow apps. Point with `human` (headless draws no pointer): `human.cursor(page)`
+   once per page, `human.click`/`human.move`/`human.hover` (curved, Fitts-timed, landing off-centre; a
+   hover-only button: `human.reveal(page, parent)`, then `click(page, button, within=parent)`)
+   and `human.wheel`; hold a reading shot with `human.idle(page, seconds)`, not `time.sleep`, so
+   the cursor drifts a few pixels instead of freezing. A frozen page also stops the browser's
+   recording early: Chromium writes a frame only when something changes. A stream behind a
    login either signs in once by hand (`python SKILL/scripts/recorder.py signin <demo-folder>
    <stream>`, for MFA) or in its `prepare` on every take.
 4. **Record and look.** `bash SKILL/scripts/stage.sh start <session> <port> [cwd]
