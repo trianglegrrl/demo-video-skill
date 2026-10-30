@@ -2,7 +2,7 @@
 macOS `say` for any other name.
 
 A Kokoro voice is named like `af_heart`: language (a American, b British), gender, name. An
-ElevenLabs voice is `eleven:Bella` (a name or a voice id; plain `eleven` is the default voice), and
+ElevenLabs voice is `eleven:River` (a name or a voice id; plain `eleven` is the default voice), and
 its words leave this Mac, so it runs only when named: on the command line, as VOICE in demo.py,
 or saved with voices.py. Any other name goes to `say -v`. A line may carry Kokoro's markup for a
 word: a pronunciation, `[frontmatter](/fɹˈʌntmætəɹ/)`, or a stress, `[word](+1)`. Kokoro speaks only
@@ -16,7 +16,7 @@ Every voiced line is cached with the silence around it trimmed, so a line's seco
 and a re-assemble neither re-voices nor bills. Each is cached as soon as it's voiced, so a run that
 fails midway keeps what it paid for. Changing the words, voice, model or settings passed here voices
 just that line again. The cache knows a voice by how it's spelled, so that a cached re-assemble needs
-no network: `eleven` and `eleven:Bella` voice separately, and settings changed on ElevenLabs' own
+no network: `eleven` and `eleven:River` voice separately, and settings changed on ElevenLabs' own
 site or a voice renamed there won't re-voice anything (delete ~/.cache/demo-video/tts to force it).
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ from cut import duration
 KOKORO = "kokoro==0.9.4"
 KOKORO_PYTHON = "3.12"
 DEFAULT_VOICE = "af_heart"
-ELEVEN_VOICE_ID = "hpp4J3VqNfWAUOO0d1Us"  # Bella: premade, American, informative
+ELEVEN_VOICE_ID = "SAz9YHcvj6GT2YYXdXww"  # River: premade, American, relaxed, neutral, informative
 ELEVEN_MODEL = "eleven_v4"  # ElevenLabs' pick for narration; reads /ipa/ inline
 NO_SPEED_MODELS = ("eleven_v3", "eleven_v4")
 SAY_WPM = 175

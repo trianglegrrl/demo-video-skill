@@ -61,9 +61,9 @@ The human voice-over and iMovie finish are manual: see
 
 ```bash
 python scripts/voices.py list --accent british     # every voice in your ElevenLabs account
-python scripts/voices.py set Bella --stability 0.4 # save a voice and its settings
-python scripts/fit.py <demo-folder> eleven:Bella   # how long does the picture outlast each line?
-python scripts/assemble.py <demo-folder> out.mp4 eleven:Bella --fit   # cut it down to the lines
+python scripts/voices.py set River --stability 0.4 # save a voice and its settings
+python scripts/fit.py <demo-folder> eleven:River   # how long does the picture outlast each line?
+python scripts/assemble.py <demo-folder> out.mp4 eleven:River --fit   # cut it down to the lines
 ```
 
 `SKILL.md` has the details. Voiced lines are cached in `~/.cache/demo-video/tts`, so only a

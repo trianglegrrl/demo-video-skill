@@ -9,7 +9,7 @@
                          [--speed N] [--speaker-boost | --no-speaker-boost]
     python voices.py get                                              # what assemble.py will use
 
-A <voice> is an ElevenLabs name or id (`Bella`, `eleven:Bella`), or a Kokoro name (`af_heart`).
+A <voice> is an ElevenLabs name or id (`River`, `eleven:River`), or a Kokoro name (`af_heart`).
 `set` saves to ~/.config/demo-video/voice.json: the voice every demo uses unless the command line
 or VOICE in demo.py names another. Setting another voice starts its model and settings over. A
 macOS `say` voice can't be saved: pass its name to assemble.py.

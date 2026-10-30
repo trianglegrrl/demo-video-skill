@@ -86,7 +86,7 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
 ## Voices and fit
 
 **Picking a voice.** `[voice]` is a Kokoro name (`af_heart`, the default; `bf_emma` is British),
-`eleven:<name or id>` (`eleven:Bella`; plain `eleven` is Bella), or any other name for
+`eleven:<name or id>` (`eleven:River`; plain `eleven` is River), or any other name for
 `say -v '?'`. The order: the command line, `VOICE` in demo.py, the saved choice, Kokoro.
 ElevenLabs sends the lines to a third party and bills characters, so a key alone never turns it
 on: it runs only when named, and a saved voice counts, sending every later demo's lines. Never use
