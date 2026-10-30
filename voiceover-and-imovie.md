@@ -41,5 +41,7 @@ File → Share → File…, at 1080p (the size the pipeline renders). Save it wh
 
 ## Not automated
 
-The voice-over and the iMovie edit are manual by design: the person's read sets the final
-pacing. The pipeline does not re-time the video to a recorded voice.
+The human voice-over and the iMovie edit are manual by design: the person's read sets the
+final pacing. The pipeline does not re-time the video to a recorded voice: `--fit` works from the
+synthetic voice's timing, which leaves a slower human reader too little room, so assemble
+`-picture.mp4` for a human read without it, or with `--pause 2`.

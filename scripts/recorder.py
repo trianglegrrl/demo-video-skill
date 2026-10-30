@@ -30,12 +30,24 @@ from types import ModuleType
 from typing import Callable, Iterator
 
 from playwright.sync_api import BrowserContext, Page, sync_playwright
+from playwright.sync_api import Error as PlaywrightError
 
 # A 1280x720 layout recorded at 1.5x device scale: cut.py upscales to 1080p and text still
 # reads on a laptop. Playwright records at CSS-pixel size; the scale only sharpens it.
 SIZE = {"width": 1280, "height": 720}
 SCALE = 1.5
 # Some web apps (Microsoft Teams) refuse a browser that calls itself headless.
+# Closing a browser loses the end of its recording (seen: 1.1 to 1.6 s), so a take runs on this
+# long, off camera, after its last clip. Chromium records a frame only when something changes, so
+# one pixel keeps changing: waiting on a still page would add nothing to the file.
+TAIL_S = 2.5
+_KEEP_PAINTING = """() => {
+    const pixel = document.createElement("div");
+    pixel.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;z-index:2147483647";
+    document.documentElement.appendChild(pixel);
+    let on = false;
+    setInterval(() => { on = !on; pixel.style.background = on ? "#010101" : "#020202"; }, 80);
+}"""
 CHROME_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
              "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
 
@@ -194,9 +206,21 @@ class Take:
         self._pw.stop()
         self._log.close()
 
+    def _record_tail(self) -> None:
+        for page in self.pages.values():
+            try:
+                page.evaluate(_KEEP_PAINTING)
+            except PlaywrightError as err:  # navigating, or closed: the take is still good
+                print(f"no recording tail on a page ({err}); the last clip may end early", flush=True)
+        time.sleep(TAIL_S)
+
     def __exit__(self, exc_type, *exc) -> None:
-        self.event("end")
-        self._close()
+        try:
+            if exc_type is None:
+                self._record_tail()
+            self.event("end")
+        finally:
+            self._close()
         if exc_type is not None:
             print(f"take {self.name} failed: kept the last good take; this one is in {self.dir}")
             return

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 
 import pytest
 
@@ -41,3 +42,11 @@ def chromium_launches() -> None:
 @pytest.fixture
 def ffmpeg() -> None:
     need(bool(shutil.which("ffmpeg")), "ffmpeg")
+
+
+@pytest.fixture
+def drawtext() -> None:
+    """ffmpeg can draw text: every rendered shot needs it, and Homebrew's plain ffmpeg can't."""
+    filters = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True,
+                             text=True).stdout if shutil.which("ffmpeg") else ""
+    need(" drawtext " in filters, "ffmpeg with drawtext (see doctor.sh)")

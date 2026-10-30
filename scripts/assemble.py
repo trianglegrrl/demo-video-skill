@@ -1,11 +1,12 @@
 """Assemble the narrated video: every scene's shots on the desktop, voiced, held to fit.
 
-    python assemble.py <demo-folder> <out.mp4> [voice]
+    python assemble.py <demo-folder> <out.mp4> [voice] [--fit [--pause S] [--max-speed X]]
 
 For each scene in demo.SCENES (in order) and each shot in its take: render the shot
-(cut.render), voice its line (tts: Kokoro-82M by default, or a macOS `say` voice), and when
+(cut.render), voice its line (tts: Kokoro-82M by default, ElevenLabs, or a macOS `say` voice), and when
 the line needs longer than the footage, hold the shot's last frame until the line is done. A
-title card opens the video.
+title card opens the video. With --fit, footage longer than its line is also cut down to it
+(retime.py), so the picture doesn't play on in silence; fit.py shows what that would do.
 
 Writes four files:
   <out>.mp4            the video with the placeholder narration
@@ -15,17 +16,17 @@ Writes four files:
 """
 from __future__ import annotations
 
+import argparse
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 from types import ModuleType
 
-from cut import FONT_B, FPS, _text, duration, events_of, render, shots, wallpaper
+from cut import FONT_B, FPS, _text, duration, events_of, shots, wallpaper
 from recorder import load_demo
-from tts import DEFAULT_VOICE, spoken, voice_lines
+from retime import LEAD, MAX_SPEED, PAUSE, TAIL, Pacing, fit_shot, render_pieces
+from tts import choose, spoken, voice_lines
 
-LEAD, TAIL = 0.25, 0.45  # air before a line starts, and after it ends, inside its shot
 TITLE_SECONDS = 3.0
 
 
@@ -63,12 +64,12 @@ def title_card(demo: ModuleType, bg: Path, dst: Path) -> None:
                     "-ar", "48000", "-ac", "1", "-shortest", str(dst)], check=True)
 
 
-def voice_scenes(scenes: list[dict], voice_name: str,
-                 tmp: Path) -> dict[tuple[int, int], tuple[Path, float]]:
+def voice_scenes(scenes: list[dict], voice_name: str, tmp: Path,
+                 options: dict | None = None) -> dict[tuple[int, int], tuple[Path, float]]:
     """Every scene's spoken lines in one batch (Kokoro loads its model once), keyed by
     (scene, line) so a silent line never shifts another line's audio onto the wrong shot."""
     keys = [(s, i) for s, scene in enumerate(scenes) for i, t in enumerate(scene["lines"]) if t]
-    voiced = voice_lines([scenes[s]["lines"][i] for s, i in keys], voice_name, tmp)
+    voiced = voice_lines([scenes[s]["lines"][i] for s, i in keys], voice_name, tmp, options)
     return dict(zip(keys, voiced, strict=True))
 
 
@@ -87,7 +88,8 @@ def check(demo: ModuleType) -> None:
             raise SystemExit(f"{scene['take']}: {n} shots but {len(scene['lines'])} lines")
 
 
-def main(demo: ModuleType, out: Path, voice_name: str) -> None:
+def main(demo: ModuleType, out: Path, voice_name: str, options: dict,
+         pacing: Pacing | None = None) -> None:
     check(demo)
     script = [f"# {demo.TITLE}: narration", "",
               "Read-along script. Each line: where it starts in the video, (window, seconds it has "
@@ -99,7 +101,7 @@ def main(demo: ModuleType, out: Path, voice_name: str) -> None:
         wallpaper(demo, bg)
         parts, at = [tmp / "title.mp4"], TITLE_SECONDS
         title_card(demo, bg, parts[0])
-        voiced = voice_scenes(demo.SCENES, voice_name, tmp)
+        voiced = voice_scenes(demo.SCENES, voice_name, tmp, options)
         for s, scene in enumerate(demo.SCENES):
             take = demo.OUT / scene["take"]
             events = events_of(take)
@@ -108,9 +110,12 @@ def main(demo: ModuleType, out: Path, voice_name: str) -> None:
             for i, (shot, text) in enumerate(zip(shots(events, scene.get("speeds")),
                                                  scene["lines"])):
                 raw, clip, line_len = tmp / f"{take.name}-{i}.mp4", None, 0.0
-                render(demo, take, shot, starts, bg, raw)
                 if text:
                     clip, line_len = voiced[(s, i)]
+                pieces = (shot,)
+                if pacing:
+                    pieces = fit_shot(take, shot, starts, line_len if text else None, pacing).pieces
+                render_pieces(demo, take, pieces, starts, bg, raw)
                 part = tmp / f"{take.name}-{i}-final.mp4"
                 length = finish_shot(raw, clip, line_len, part)
                 if text:  # the reader's budget: from this line's start to the next shot
@@ -136,7 +141,17 @@ def main(demo: ModuleType, out: Path, voice_name: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (3, 4):
-        raise SystemExit("usage: assemble.py <demo-folder> <out.mp4> [voice]")
-    main(load_demo(sys.argv[1]), Path(sys.argv[2]).expanduser(),
-         sys.argv[3] if len(sys.argv) == 4 else DEFAULT_VOICE)
+    parser = argparse.ArgumentParser(description="Assemble the narrated video.")
+    parser.add_argument("folder")
+    parser.add_argument("out", type=Path)
+    parser.add_argument("voice", nargs="?")
+    parser.add_argument("--fit", action="store_true", help="cut footage down to its line")
+    parser.add_argument("--pause", type=float, help=f"with --fit: seconds between lines ({PAUSE})")
+    parser.add_argument("--max-speed", type=float, help=f"with --fit: the speed cap ({MAX_SPEED})")
+    args = parser.parse_args()
+    if not args.fit and (args.pause is not None or args.max_speed is not None):
+        parser.error("--pause and --max-speed need --fit")
+    fitting = Pacing(args.pause if args.pause is not None else PAUSE,
+                     args.max_speed if args.max_speed is not None else MAX_SPEED) if args.fit else None
+    d = load_demo(args.folder)
+    main(d, args.out.expanduser(), *choose(args.voice, d), fitting)

@@ -13,11 +13,18 @@ done
 # Read the list first: `grep -q` closing the pipe early fails it under pipefail.
 filters="$(ffmpeg -hide_banner -filters 2>/dev/null || true)"
 if command -v ffmpeg >/dev/null && ! grep -q " drawtext " <<<"$filters"; then
-  echo "MISSING ffmpeg drawtext filter -> brew reinstall ffmpeg (needs libfreetype)"; fail=1
+  # Homebrew's plain ffmpeg formula is built without freetype, so reinstalling it can't help.
+  echo "MISSING ffmpeg drawtext filter -> brew install ffmpeg-full; export PATH=\"\$(brew --prefix ffmpeg-full)/bin:\$PATH\""; fail=1
 fi
 if command -v uv >/dev/null && ! uv run -q --no-project --with playwright python -c \
   "from playwright.sync_api import sync_playwright as p; b=p().start().chromium.launch(); b.close()" >/dev/null 2>&1; then
   echo "MISSING Playwright Chromium -> uv run --no-project --with playwright playwright install chromium"; fail=1
+fi
+# Optional: only eleven: voices need a key.
+if [ -n "${ELEVENLABS_API_KEY:-}" ] || grep -Eq '^[[:space:]]*(export[[:space:]]+)?ELEVENLABS_API_KEY[[:space:]]*=' "$HOME/.config/demo-video/elevenlabs.env" 2>/dev/null; then
+  echo "elevenlabs: key found"
+else
+  echo "elevenlabs: no key (only needed for eleven: voices)"
 fi
 [ $fail = 0 ] && echo "doctor: ok"
 exit $fail

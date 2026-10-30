@@ -28,6 +28,7 @@ FONT = "/System/Library/Fonts/Supplemental/Arial.ttf"
 FONT_B = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
 RENDER_BASE_S, RENDER_PER_S = 60, 20  # render timeout: base + per second of shot
 JUMP_TAG = 20.0  # seconds of cut wait that earn a tag ("+40 s", "+N min")
+TAG_S = 1.6  # how long the tag stays on screen
 # The front window, and the background slots in stream order (x, y, width): 16:9 content
 # plus a title bar. Four slots: a demo has at most four streams.
 FRONT = (176, 76, 1568)
@@ -133,7 +134,7 @@ def render(demo: ModuleType, take: Path, shot: Shot, starts: dict[str, float], b
     if shot.gap >= JUMP_TAG:
         tail += (f",drawtext=fontfile='{FONT_B}':text='{jump(shot.gap)}':fontcolor=white:fontsize=30:"
                  f"box=1:boxcolor=0x1c7ed6@0.85:boxborderw=14:x=w-tw-40:y=50:"
-                 f"enable='lt(t,1.6)'")
+                 f"enable='lt(t,{TAG_S})'")
     chains.append(tail + "[v]")
     # -t on the OUTPUT too: overlay's shortest=1 alone once let a 5 s shot run 348 s.
     args += ["-filter_complex", ";".join(chains), "-map", "[v]", "-t", f"{shot.length:.3f}",
