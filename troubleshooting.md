@@ -50,8 +50,8 @@ Each row was hit for real while making a 5-minute product demo with this pipelin
 | The picture plays on for seconds after a line ends | the shot runs for its footage, and the line is shorter | `fit.py` shows how much; `assemble.py --fit` cuts it down; add words where it says the picture can't absorb the rest |
 | `--fit` cut something that mattered | it changed only a cursor-sized patch of the front window (a spinner, a one-character counter) or happened in a window behind it, so it read as still | keep that moment out of the cut: give the line more words, or assemble with a higher `--pause` |
 | `doctor.sh`: MISSING ffmpeg drawtext filter | Homebrew's plain `ffmpeg` formula is built without freetype, so reinstalling it doesn't help | `brew install ffmpeg-full`, then put `$(brew --prefix ffmpeg-full)/bin` first on `PATH` |
-| `no ElevenLabs key` | neither the environment nor the key file has it | set `ELEVENLABS_API_KEY`, or write that line to `~/.config/demo-video/elevenlabs.env` (mode 600) |
-| `ElevenLabs refused …: 401` or `: 422` | a bad or restricted key (401); a setting out of range or a wrong model (422: the message says which) | check the key's permissions; `voices.py models` lists the model ids |
+| `no ElevenLabs key` | neither the environment nor the key file has it | follow "Setting up ElevenLabs" in [SKILL.md](SKILL.md#voices-and-fit) |
+| `ElevenLabs refused …: 401` or `: 422` | a bad or restricted key, or an old `ELEVENLABS_API_KEY` in the environment hiding the file (401); a setting out of range or a wrong model (422: the message says which) | the key needs Text to Speech and Voices (read), and `voices.py models` and `quota` need read access to models and user details; `voices.py models` lists the model ids |
 | `--speed` changes nothing | `eleven_v4` and `eleven_v3` accept it and ignore it | use `eleven_turbo_v2_5`, or change the words |
 | An ElevenLabs voice says a word wrongly | the inline IPA varies by voice and phrase | audition with `voices.py say`; respell the word in the line (`trapezIi`) if IPA won't land |
 | `voices.py quota` doesn't move after voicing | the counter lags | `/v1/history` is the live record |

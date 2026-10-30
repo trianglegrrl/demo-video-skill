@@ -28,12 +28,36 @@ macOS (for iMovie), [uv](https://docs.astral.sh/uv/), ffmpeg with `drawtext`, an
 Homebrew's plain `ffmpeg` no longer has `drawtext`: use `brew install ffmpeg-full` and put
 `$(brew --prefix ffmpeg-full)/bin` first on your `PATH`. Kokoro needs Python 3.10 to 3.12, which
 uv fetches on its own; its first run downloads the model (about 330 MB). Any macOS `say` voice
-still works if you pass its name instead. ElevenLabs voices need `ELEVENLABS_API_KEY`, in the
-environment or in `~/.config/demo-video/elevenlabs.env` (mode 600). Check them:
+still works if you pass its name instead. ElevenLabs is optional and needs a key (see below).
+Check them:
 
 ```bash
 bash ~/.claude/skills/demo-video/scripts/doctor.sh
 ```
+
+### ElevenLabs key
+
+Skip this if you're narrating with Kokoro. To use ElevenLabs:
+
+1. On the [ElevenLabs Developers page](https://elevenlabs.io/app/developers), under API Keys,
+   create a key. Restrict it to Text to Speech and Voices (read), and set a credit quota if you
+   want a spending cap. `voices.py models` and `voices.py quota` need read access to models and
+   to your user details as well; nothing else depends on those two commands.
+2. Save it. Run this in your own terminal and paste the key at the prompt. It isn't shown or kept
+   in your shell history, and the file is readable only by you:
+
+   ```bash
+   mkdir -p ~/.config/demo-video && (umask 077; printf "ElevenLabs key: "; read -rs key; echo; printf "ELEVENLABS_API_KEY=%s\n" "$key" > ~/.config/demo-video/elevenlabs.env)
+   ```
+
+   Or set `ELEVENLABS_API_KEY` in your environment, which wins over the file.
+3. Check it. This is free, and prints River if the key works:
+
+   ```bash
+   uv run -q --no-project --with playwright python ~/.claude/skills/demo-video/scripts/voices.py list --search River
+   ```
+
+A key alone changes nothing: a demo uses ElevenLabs only when you name or save a voice.
 
 ## Smoke test
 

@@ -90,8 +90,21 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
 `say -v '?'`. The order: the command line, `VOICE` in demo.py, the saved choice, Kokoro.
 ElevenLabs sends the lines to a third party and bills characters, so a key alone never turns it
 on: it runs only when named, and a saved voice counts, sending every later demo's lines. Never use
-it for a script the person hasn't cleared to leave the Mac. It needs `ELEVENLABS_API_KEY`, or
-that line in `~/.config/demo-video/elevenlabs.env` (mode 600).
+it for a script the person hasn't cleared to leave the Mac.
+
+**Setting up ElevenLabs.** Only when the person wants an ElevenLabs voice. `doctor.sh` says whether
+a key is there, not whether it works. With none, ask them to create one on the
+[ElevenLabs Developers page](https://elevenlabs.io/app/developers), under API Keys, restricted to
+Text to Speech and Voices (read), with a credit quota if they want a spending cap. Then have them
+run this in their own terminal, which saves it with mode 600 and keeps it out of shell history:
+
+    mkdir -p ~/.config/demo-video && (umask 077; printf "ElevenLabs key: "; read -rs key; echo; printf "ELEVENLABS_API_KEY=%s\n" "$key" > ~/.config/demo-video/elevenlabs.env)
+
+Never ask for the key in chat, put it on a command line or print it, and don't search other
+projects for one; if they point you at a file that has it, copy the line without showing it.
+`ELEVENLABS_API_KEY` in the environment wins over the file, so an old one there hides a new key.
+Done when `python SKILL/scripts/voices.py list --search River` prints River (free). A 401 means
+a bad key or a missing permission.
 
     python SKILL/scripts/voices.py list [--search TEXT] [--gender G] [--accent A]
     python SKILL/scripts/voices.py say Matilda "A line to audition." --out try.wav  # bills the line
