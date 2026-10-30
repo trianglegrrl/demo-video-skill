@@ -89,7 +89,7 @@ def test_load_demo_finds_demo_py_from_a_scene_file_and_its_helpers(tmp_path):
 def test_each_line_gets_its_own_audio_with_silent_lines_between(tmp_path, monkeypatch):
     batches: list = []
 
-    def fake_voice_lines(lines, voice, tmp):
+    def fake_voice_lines(lines, voice, tmp, options=None):
         batches.append(lines)
         return [(Path(f"{t}.wav"), float(len(t))) for t in lines]
 
@@ -107,7 +107,7 @@ def test_the_stamp_reads_minutes_and_tenths():
     assert assemble.stamp(3.25) == "0:03.2" and assemble.stamp(122.5) == "2:02.5"
 
 
-def test_render_caps_a_shot_at_its_clip_length_even_when_a_stream_runs_long(tmp_path, ffmpeg):
+def test_render_caps_a_shot_at_its_clip_length_even_when_a_stream_runs_long(tmp_path, drawtext):
     """A 30 s stream behind a 2 s clip must render 2 s, not run on (overlay's shortest=1 alone
     once let a 10 s shot render 348 s)."""
     for name, seconds in (("term", 30), ("app", 30)):
@@ -152,3 +152,29 @@ def test_a_take_that_ends_cleanly_replaces_the_old_one(tmp_path, chromium_launch
                 pass
     assert "second" in (demo.OUT / "s1" / "events.jsonl").read_text()
     assert (demo.OUT / "s1" / "app.webm").exists() and not (demo.OUT / "s1.partial").exists()
+
+
+def test_the_recording_covers_the_last_clip_to_its_end(tmp_path, chromium_launches):
+    """Closing the browser loses the last second or so of its recording (seen: 1.1 to 1.6 s),
+    which once cut the last shot of every take short."""
+    from recorder import Take
+    demo = _blank_demo(tmp_path)
+    with Take("s1", demo) as t:
+        with t.clip("last", "app"):
+            t.pages["app"].wait_for_timeout(2000)
+    events = cut.events_of(demo.OUT / "s1")
+    start = next(e["t"] for e in events if e["kind"] == "start")
+    clipend = next(e["t"] for e in events if e["kind"] == "clipend")
+    covered = start + cut.duration(demo.OUT / "s1" / "app.webm")
+    assert covered >= clipend, f"the stream stops at {covered:.2f}, the clip at {clipend:.2f}"
+
+
+def test_a_page_closed_at_the_end_of_a_take_still_keeps_the_take(tmp_path, chromium_launches):
+    """The tail must not cost a good take: its last action may close or navigate the page."""
+    from recorder import Take
+    demo = _blank_demo(tmp_path)
+    with Take("s1", demo) as t:
+        with t.clip("last", "app"):
+            t.pages["app"].close()
+    assert (demo.OUT / "s1" / "events.jsonl").exists() and not (demo.OUT / "s1.partial").exists()
+    assert (demo.OUT / "s1" / "app.webm").exists()
