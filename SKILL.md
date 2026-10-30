@@ -1,13 +1,14 @@
 ---
 name: demo-video
-description: Use when making a narrated product demo or screencast video of a product (terminal, web app, Teams or Slack windows), when real waits would bloat the video, when the Mac's screen is locked or OBS/screen capture records blank frames, or when a person will record their own voice-over and finish the edit in iMovie.
+description: Use when making a narrated product demo or screencast video of a product (terminal, web app, Teams or Slack windows), when real waits would bloat the video, when the Mac's screen is locked or OBS/screen capture records blank frames, when the narration should be an ElevenLabs voice, when the picture plays on in silence after a line ends, or when a person will record their own voice-over and finish the edit in iMovie.
 ---
 
 # Demo video
 
 A **headless recorder**: Playwright records every window (web app, terminal, chat) as its own
 stream on one take clock; only the `clip` stretches are kept, laid out as windows on one
-desktop; Kokoro-82M (a local, open-weight voice) reads a placeholder narration; a person then reads the time-stamped
+desktop; a voice reads the narration: Kokoro-82M (local, open-weight) as a placeholder, or an
+ElevenLabs voice as the final read. For a placeholder, a person then reads the time-stamped
 script as the real voice-over and finishes in iMovie. No screen capture: the Mac may be locked.
 
 `SKILL` below means this skill's folder. Tools are in `SKILL/scripts/`.
@@ -32,7 +33,8 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
    smoke test's runner) into a folder of your own. In `demo.py` set `TITLE`, `OUT`,
    `PROFILES` (a folder of its own: two demos sharing one collide), `TMUX`, `STREAMS`
    (at most 4) and `SCENES`: one take per scene, **one line per clip** (`None` = silent).
-   Budget ~2.7 words a second (Kokoro's pace) against the length asked for. Write the lines
+   Budget ~2.7 words a second for Kokoro, ~3 for ElevenLabs (`fit.py` measures the voice you pick)
+   against the length asked for. Write the lines
    in the voice of the person who will read them (their voice skill, if they have one): full
    spoken sentences, plain words, not captions. A word Kokoro gets wrong takes its
    pronunciation inline, `[frontmatter](/fɹˈʌntmætəɹ/)`; the script shows just the word.
@@ -63,25 +65,55 @@ script as the real voice-over and finishes in iMovie. No screen capture: the Mac
    that fails keeps the previous good one; its partial recording is in `OUT/<take>.partial`.
    **Look at them.** Done when every shot shows what its line says: no blank terminal, no
    login page, no splash screen, text readable.
-5. **Assemble.** `python SKILL/scripts/assemble.py <demo-folder> <out.mp4> [voice]`
-   (voice: a Kokoro voice, default `af_heart`; `bf_emma` is British; any other name is a
-   `say -v '?'` voice). The first Kokoro run downloads the model (~330 MB) and takes a
-   minute; after that it voices faster than real time. Writes `<out>.mp4` (narrated),
+5. **Fit and assemble.** Each shot runs for its clip or its line, whichever is longer, so a line
+   shorter than its footage leaves the picture playing in silence. Measure that first (see
+   [Voices and fit](#voices-and-fit)): `python SKILL/scripts/fit.py <demo-folder> [voice]`.
+   Where it says to add words, write them in the reader's voice and have the person approve them,
+   as in step 2; where it says a last frame freezes, shorten the line. Voiced lines are cached, so
+   re-running is quick and bills only changed lines. Then `python SKILL/scripts/assemble.py
+   <demo-folder> <out.mp4> [voice] --fit`. The first Kokoro run downloads the model (~330 MB)
+   and takes a minute; after that it voices faster than real time. Writes `<out>.mp4` (narrated),
    `-script.md` (each line's start and its seconds), `-picture.mp4` (no audio) and
-   `-preview.mp4`. Too long: shorten **lines**, since a long line holds the shot's last
-   frame. Too short: lengthen the holds inside clips and re-record those takes. Each shot runs for
-   its clip or its line, whichever is longer; `cut.py` prints a take's footage length.
-   Done when the length is on target and a frame per scene checks out.
-6. **Hand off.** To the person: `-picture.mp4` (record over it), `-script.md`, the
-   narrated `.mp4` (to hear the pacing once) and
-   [voiceover-and-imovie.md](voiceover-and-imovie.md). In chat, send `-preview.mp4`
-   (uploads cap at 30 MB). The script's times hold for Kokoro; a human reads slower, and
-   iMovie absorbs that.
+   `-preview.mp4`. Too short: lengthen the holds inside clips and re-record those takes; `cut.py`
+   prints a take's footage length. Done when the length is on target and a frame per scene
+   shows its payoff: fitting cuts stills, so check nothing that matters was one.
+6. **Hand off.** An ElevenLabs read can be the finished video: hand over `<out>.mp4`. For a human
+   read: `-picture.mp4` (record over it), `-script.md`, the narrated `.mp4` (to hear the pacing
+   once) and [voiceover-and-imovie.md](voiceover-and-imovie.md); assemble that one without `--fit`
+   or with `--pause 2`, since a human reads slower than the voice it was fitted to. In chat, send
+   `-preview.mp4` (uploads cap at 30 MB). The script's times hold for the voice used.
+
+## Voices and fit
+
+**Picking a voice.** `[voice]` is a Kokoro name (`af_heart`, the default; `bf_emma` is British),
+`eleven:<name or id>` (`eleven:Bella`; plain `eleven` is Bella), or any other name for
+`say -v '?'`. The order: the command line, `VOICE` in demo.py, the saved choice, Kokoro.
+ElevenLabs sends the lines to a third party and bills characters, so a key alone never turns it
+on: it runs only when named, and a saved voice counts, sending every later demo's lines. Never use
+it for a script the person hasn't cleared to leave the Mac. It needs `ELEVENLABS_API_KEY`, or
+that line in `~/.config/demo-video/elevenlabs.env` (mode 600).
+
+    python SKILL/scripts/voices.py list [--search TEXT] [--gender G] [--accent A]
+    python SKILL/scripts/voices.py say Matilda "A line to audition." --out try.wav  # bills the line
+    python SKILL/scripts/voices.py set Matilda --stability 0.4     # saved for every demo
+    python SKILL/scripts/voices.py get | show <voice> | models | quota
+
+`set` takes `--model`, `--stability`, `--similarity`, `--style`, `--speed` and
+`--speaker-boost`, for that voice only; one demo overrides them with `VOICE_SETTINGS = {"model": ..., "stability": ...}`
+in demo.py. The default model, `eleven_v4`, ignores `--speed` (so does `eleven_v3`;
+`eleven_turbo_v2_5` honours it), and it reads `[word](/ipa/)` inline: audition those words. A
+voice cloned from a real person needs that person's permission: never pick one on your own.
+
+**Fitting.** A shot should run for its speech plus `--pause` (1 s: a person changing gears).
+`--fit` takes up the rest in order: cut what is still in the front window (`human.idle` drift
+counts as still; clicks, moves and new text do not; a dimmed window behind it isn't looked at), then speed up what remains, to
+`--max-speed` (1.5; a shot's own `speeds` is a floor). What's left is for the line: `fit.py` reports
+it as words to add, and never writes them. A shot's last second is never cut. A shot with no line holds 3 s under `--fit`.
 
 ## Changing a shot later
 
 Re-record only that take (step 4) and re-assemble; other takes are reused as recorded. A
-wording change needs only step 5.
+wording change needs only step 5, and re-voices only that line.
 
 ## When it breaks
 
